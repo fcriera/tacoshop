@@ -12,11 +12,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.SessionAttributes;
 
 import com.lm2a.data.IngredientRepository;
 import com.lm2a.data.TacoRepository;
 import com.lm2a.model.Ingredient;
 import com.lm2a.model.Ingredient.Type;
+import com.lm2a.model.Order;
 import com.lm2a.model.Taco;
 
 import javax.validation.Valid;
@@ -25,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Controller
 @RequestMapping("/design")
+@SessionAttributes("order")
+
 public class DesignTacoController {
 	
 	@Autowired
@@ -36,9 +40,17 @@ public class DesignTacoController {
 	@GetMapping
 	 public String showDesignForm(Model model) {
 	        populateIngredients(model);
-	        model.addAttribute("tktn", new Taco());
 	        return "design";
 	 }
+	@ModelAttribute(name="tktn")
+	public Taco taco() {
+		return new Taco();
+	}
+	
+	@ModelAttribute(name="order")
+	public Order order() {
+		return new Order();
+	}
 
 	private List <Ingredient> filterByType(List<Ingredient> ingredients, Type type) {
 		return ingredients.stream()
@@ -46,12 +58,13 @@ public class DesignTacoController {
 				.collect(Collectors.toList());
 	}
 	@PostMapping
-	public String processDesign(@Valid @ModelAttribute (name="tktn") Taco design, Errors errors, Model model ) {
+	public String processDesign(@Valid @ModelAttribute (name="tktn") Taco design, Errors errors, Model model, @ModelAttribute Order order) {
 		if(errors.hasErrors()) {
 			populateIngredients(model);
 			return "design";
 		}
 		Taco saved= tacoRepo.save(design);
+		order.addDesign(saved);
 		log.info("Designed Taco: "+saved);
 		return "redirect:/orders/current";
 		
